@@ -1,0 +1,27 @@
+# render.yaml - Render.com Deployment Configuration
+# ====================================================
+# Tells Render how to build and run the Jarvis MCP server
+#
+# To configure:
+#   services:
+#     - type: web
+#       name: jarvis-mcp
+#       runtime: python
+#       plan: free
+#       buildCommand: pip install -r requirements.txt
+#       startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+#       envVars:
+#         - key: JARVIS_API_KEY  (set as secret in Render dashboard, NOT here)
+#         - key: MAX_TIMEOUT_SECONDS
+#           value: 120
+#         - key: ALLOWED_LANGUAGES
+#           value: python
+#
+# Deployment steps:
+#   1. Push this repo to GitHub
+#   2. Sign up at render.com with GitHub (no credit card needed)
+#   3. New > Web Service > connect your repo
+#   4. Set JARVIS_API_KEY in environment variables (mark as secret)
+#   5. Deploy - you get https://jarvis-mcp.onrender.com
+#   6. Register /openapi.json in Copilot Studio as custom action
+#   7. Test: curl https://jarvis-mcp.onrender.com/health
