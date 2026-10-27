@@ -29,3 +29,21 @@
 #
 # Run with: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 # OpenAPI docs auto-available at: /docs (Swagger) and /openapi.json
+
+from fastapi import FastAPI, HTTPException
+from mcp.server import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse 
+
+mcp = FastMCP("jarvis-sandbox", stateless_http=True)
+
+@mcp.tool()
+def run_script(language: str, script: str, parameters: dict | None = None, timeout: int = 60) -> dict:
+    """Run a script in an isolated sandbox. Returns exit code, stdout, stderr."""
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request: Request) -> JSONResponse:
+    return JSONResponse({"status": "ok"})
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http")
