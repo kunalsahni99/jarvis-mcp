@@ -34,6 +34,7 @@
 # from datetime import datetime, timezone
 
 import os
+import hmac
 from mcp.server import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -77,5 +78,34 @@ async def health(request: Request) -> JSONResponse:
 #         lines = f.readlines()[-limit:]
 #     return JSONResponse({"entries": [json.loads(l) for l in lines]})
 
+class APIKeyMiddleware:
+    """Rejects HTTP requests that lack the right X-API-Key header"""
+
+    def __init__(self, app, api_key: str, open_paths=("/health",)):
+        self.app = app
+        self.api_key = api_key.encode()
+        self.open_paths = open_paths
+
+    async def __call__(self, scope, receive, send):
+        # Only guard HTTP requests; startup/shutdown ("lifespan") events pass through
+        if scope["type"] != "http" or scope["path"] in self.open_paths:
+            return await self.app(scope, receive, send)
+
+        headers = dict(scope["headers"])
+        supplied = headers.get(b"x-api-key", b"")
+        if not hmac.compare_digest(supplied, self.api_key):
+            resp = JSONResponse({"error": "unauthorized"}, status_code=401)
+            return await resp(scope, receive, send)
+
+        await self.app(scope, receive, send)
+
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    import uvicorn
+    api_key = os.environ.get("JARVIS_API_KEY")
+
+    if not api_key:
+        raise SystemExit("JARVIS_API_KEY is not set; refusing to start without auth.")
+
+    app = mcp.streamable_http_app()
+    app.add_middleware(APIKeyMiddleware, api_key=api_key)
+    uvicorn.run(app, host=mcp.settings.host, port=mcp.settings.port)
